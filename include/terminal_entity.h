@@ -1,6 +1,5 @@
 /*-----------------------------------------------------------------------------------------
  *    File Name   :terminal_entity.h
- *    Version     :V1.0.0
  *    Create Date :2020-10-15
  *    Modufy Date :2020-10-15
  *    Information :
@@ -25,19 +24,17 @@ extern "C"{
  *    Type/Structure
  */
 
-typedef struct terminal_xfer_api_t{
-	char (*getCh)(void);
-	void (*putCh)(char ch);
-	void (*read)(void* buffer, int len);
+typedef struct _tool_terminal_xfer_api_t{
 	void (*send)(const void* data, int len);
+	void (*sendByte)(uint8_t data);
 	void (*sendString)(const char* string);
-}terminal_xfer_api_t;
+}tool_terminal_xfer_api_t;
 
-typedef struct _terminal_command_t{
+typedef struct _tool_terminal_command_t{
 	const char* command;
-	void* userData;
-	bool (*handle)(terminal_xfer_api_t *pApi, void* userData, int argc, char **argv);
-}terminal_command_t;
+	void* attachment;
+	bool (*execute)(const tool_terminal_xfer_api_t* api, void* attachment, int argc, char **argv);
+}tool_terminal_command_t;
 
 /*-----------------------------------------------------------------------------------------
  *    Variable

@@ -26,32 +26,29 @@ extern "C"{
 /*-----------------------------------------------------------------------------------------
  *    Type/Structure
  */
-
-typedef struct _terminal_abstract_t{
-	terminal_xfer_api_t Xfer;
-	terminal_command_t* (*getCommands)(void);
-	uint32_t (*getCommandsSize)(void);
-	const char* (*getPrefix)(void);
-	struct{
-		void (*onUnknownCommand)(terminal_xfer_api_t *pApi, int argc, char *argv[]);
-		void (*onOutOfBuffer)(terminal_xfer_api_t *pApi);
-	}Event;
-}terminal_abstract_t;
+typedef struct _tool_terminal_config_t{
+  tool_terminal_xfer_api_t* xferApi;
+	tool_terminal_command_t* commandList;
+	uint32_t commandSize;
+	uint8_t* handleBuffer;
+	uint32_t handleBufferSize;
+	const char* prefix;
+	
+}tool_terminal_config_t;
 
 typedef struct _terminal_handle_t{
 	char* argv[8];
 	char* readBuffer;
 	uint32_t readBufferSize;
 	uint32_t bufferPointer;
-	terminal_abstract_t Abstract;
 	uint32_t status;
 }terminal_handle_t;
 
 typedef struct _terminal_api_t{
-	bool (*init)(terminal_handle_t* pHandle, const terminal_abstract_t *abstract);
+	bool (*init)(terminal_handle_t* handle, const tool_terminal_config_t *config);
 	bool (*setBuffer)(terminal_handle_t* pHandle, void* buffer, uint32_t bufferSize);
-	bool (*addCommand)(terminal_handle_t* pHandle, const terminal_command_t command);
-	bool (*removeCommand)(terminal_handle_t* pHandle, const terminal_command_t command);
+	bool (*addCommand)(terminal_handle_t* pHandle, const tool_terminal_command_t command);
+	bool (*removeCommand)(terminal_handle_t* pHandle, const tool_terminal_command_t command);
 	bool (*start)(terminal_handle_t* pHandle);
 	bool (*stop)(terminal_handle_t* pHandle);
 }terminal_api_t;

@@ -1,24 +1,7 @@
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.win
-*.layout
+# Keil project
+/Listings
+/Objects
+/DebugConfig
+*.uvoptx
 *.uvguix.danny
-
-# Executables
-*.exe
-*.out
-*.app
-*.win
-*.uvguix.*
-*.crf
-*.dep
-*.dep
-*.axf
-*.lst
-Objects/
-Listings/
-DebugConfig/
-*.dep
-*.scvd
+EventRecorderStub.scvd
