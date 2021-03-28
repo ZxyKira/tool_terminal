@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "tool_fifo.h"
+
 #include "terminal_entity.h"
 
 #ifdef __cplusplus
@@ -26,31 +28,58 @@ extern "C"{
 /*-----------------------------------------------------------------------------------------
  *    Type/Structure
  */
+
 typedef struct _tool_terminal_config_t{
   tool_terminal_xfer_api_t* xferApi;
-	tool_terminal_command_t* commandList;
-	uint32_t commandSize;
-	uint8_t* handleBuffer;
-	uint32_t handleBufferSize;
 	const char* prefix;
 	
+  struct{
+	  tool_terminal_command_t* buffer;
+	  uint32_t size;
+	}commandBuffer;
+	
+	struct{
+	  uint8_t* buffer;
+	  uint32_t size;
+	}handleBuffer;
+	
+	struct{
+	  uint8_t* buffer;
+	  uint32_t size;
+	}inputBuffer;
 }tool_terminal_config_t;
 
-typedef struct _terminal_handle_t{
-	char* argv[8];
-	char* readBuffer;
-	uint32_t readBufferSize;
-	uint32_t bufferPointer;
-	uint32_t status;
-}terminal_handle_t;
+typedef struct _tool_terminal_handle_t{
+	tool_fifo_t inputBuffer;
+	tool_terminal_xfer_api_t xfer;
+	
+	struct{
+	  tool_terminal_command_t* command;
+	  uint32_t size;
+	}commandList;
+	
+	struct{
+	  uint8_t* buffer;
+	  uint32_t size;
+	}handleBuffer;
+	
+	struct{
+	  char* argv[8];
+	}handleCache;
+	
+	const char* prefix;
+	uint32_t flag;
+}tool_terminal_handle_t;
+
+
 
 typedef struct _terminal_api_t{
-	bool (*init)(terminal_handle_t* handle, const tool_terminal_config_t *config);
-	bool (*setBuffer)(terminal_handle_t* pHandle, void* buffer, uint32_t bufferSize);
-	bool (*addCommand)(terminal_handle_t* pHandle, const tool_terminal_command_t command);
-	bool (*removeCommand)(terminal_handle_t* pHandle, const tool_terminal_command_t command);
-	bool (*start)(terminal_handle_t* pHandle);
-	bool (*stop)(terminal_handle_t* pHandle);
+	bool (*init)         (tool_terminal_handle_t* handle, const tool_terminal_config_t *config);
+	bool (*addCommand)   (tool_terminal_handle_t* handle, const tool_terminal_command_t command);
+	bool (*removeCommand)(tool_terminal_handle_t* handle, const tool_terminal_command_t command);
+	bool (*insertByte)   (tool_terminal_handle_t* handle, uint8_t data);
+	bool (*insert)       (tool_terminal_handle_t* handle, uint8_t* data, uint32_t length);
+	bool (*execute)      (tool_terminal_handle_t* handle);
 }terminal_api_t;
 
 /*-----------------------------------------------------------------------------------------

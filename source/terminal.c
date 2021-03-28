@@ -30,34 +30,27 @@
 /*-----------------------------------------------------------------------------------------
  *    Variable
  */
+const char tool_terminal_default_perfix[] = "terminal-> ";
+
 
 /*-----------------------------------------------------------------------------------------
  *    Inline Function
  */
 /*
-static inline bool terminal_compairTerminalCommand(const terminal_command_t *src, const terminal_command_t *dst){
-	return memcmp(src, dst, sizeof(terminal_command_t))?false:true;
+static inline bool terminal_compairTerminalCommand(const tool_terminal_command_t *src, const tool_terminal_command_t *dst){
+	return memcmp(src, dst, sizeof(tool_terminal_command_t))?false:true;
 }
 */
 
-static inline bool terminal_compairCommand(const terminal_command_t *dst, const char* command){
+static inline bool terminal_compairCommand(const tool_terminal_command_t *dst, const char* command){
 	if(dst->command == 0x00000000)
 		return false;
 	else
 		return strcmp(command, dst->command)?false:true;
 }
 
-static inline void terminal_copyTerminalCommand(terminal_command_t* dst, const terminal_command_t* src){
-	memcpy(dst, src, sizeof(terminal_command_t));
-}
-
-static inline void terminal_clearInputBuffer(terminal_handle_t* pHandle){
-	pHandle->bufferPointer = 0;
-}
-
-static inline void terminal_writePrefix(terminal_handle_t* pHandle){
-	pHandle->Abstract.Xfer.sendString(pHandle->Abstract.getPrefix());
-	pHandle->Abstract.Xfer.sendString("-> ");
+static inline void terminal_copyTerminalCommand(tool_terminal_command_t* dst, const tool_terminal_command_t* src){
+	memcpy(dst, src, sizeof(tool_terminal_command_t));
 }
 
 /*-----------------------------------------------------------------------------------------
@@ -110,7 +103,7 @@ static void terminal_doCommand(terminal_handle_t* pHandle){
 	bool isHandle = false;
 	int args = terminal_convertArgs(pHandle);
 	char** argv= pHandle->argv;
-	terminal_command_t* commands = pHandle->Abstract.getCommands();
+	tool_terminal_command_t* commands = pHandle->Abstract.getCommands();
 	int i;
 	for(i=0; i<pHandle->Abstract.getCommandsSize(); i++){
 		if(terminal_compairCommand(&commands[i], argv[0])){
@@ -134,18 +127,36 @@ static void terminal_doCommand(terminal_handle_t* pHandle){
 /*-----------------------------------------------------------------------------------------
  *    Public Function - API
  */
-bool terminal_init(terminal_handle_t* pHandle, const terminal_abstract_t *abstract){
-	if(pHandle == 0)
+bool terminal_init(tool_terminal_handle_t* handle, const tool_terminal_config_t* config){
+	if(!handle)
 		return false;
 	
+	if(!config)
+		return false;
+	
+	memset(handle, 0x00, sizeof(tool_terminal_handle_t));
+	
 	/* copy Abstract function to handle memory */
-	memcpy(&pHandle->Abstract, abstract, sizeof(terminal_abstract_t));
+	memcpy(&handle->xfer, &config->xferApi, sizeof(tool_terminal_xfer_api_t));
 	
-	uint32_t cmdBufSize = pHandle->Abstract.getCommandsSize();
+	handle->commandList.command = config->commandBuffer.buffer;
+	handle->commandList.size = config->commandBuffer.size;
 	
-	/* clear terminal_command_t cache */
-	memset(pHandle->Abstract.getCommands(), 0x00, (sizeof(terminal_command_t) * cmdBufSize));
-	pHandle->status = 0;
+	handle->handleBuffer.buffer = config->handleBuffer.buffer;
+	handle->handleBuffer.size = config->handleBuffer.size;
+	
+	if(config->prefix)
+		handle->prefix = config->prefix;
+	else
+		handle->prefix = tool_terminal_default_perfix;
+	
+	
+	tool_fifo_config_t fifo_cfg;
+	fifo_cfg.buffer = config->inputBuffer.buffer;
+  fifo_cfg.count = config->inputBuffer.size;
+  fifo_cfg.itemSize = sizeof(uint8_t);
+  tool_fifo_init(&handle->inputBuffer, &fifo_cfg);
+  
 	return true;
 }
 
@@ -159,9 +170,9 @@ bool terminal_setBuffer(terminal_handle_t* pHandle, void* buffer, uint32_t buffe
 	return true;
 }
 
-bool terminal_addCommand(terminal_handle_t* pHandle, const terminal_command_t command){
+bool terminal_addCommand(terminal_handle_t* pHandle, const tool_terminal_command_t command){
 	uint32_t cmdBufSize = pHandle->Abstract.getCommandsSize();
-	terminal_command_t* pCmdBuf = pHandle->Abstract.getCommands();
+	tool_terminal_command_t* pCmdBuf = pHandle->Abstract.getCommands();
 	int i;
 	
 	/* filter duplicates command */
@@ -189,9 +200,9 @@ bool terminal_addCommand(terminal_handle_t* pHandle, const terminal_command_t co
 	return false;
 }
 
-bool terminal_removeCommand(terminal_handle_t* pHandle, const terminal_command_t command){
+bool terminal_removeCommand(terminal_handle_t* pHandle, const tool_terminal_command_t command){
 	uint32_t cmdBufSize = pHandle->Abstract.getCommandsSize();
-	terminal_command_t* pCmdBuf = pHandle->Abstract.getCommands();
+	tool_terminal_command_t* pCmdBuf = pHandle->Abstract.getCommands();
 	int i;
 	
 	/* filter duplicates command */
@@ -201,7 +212,7 @@ bool terminal_removeCommand(terminal_handle_t* pHandle, const terminal_command_t
 			continue;
 		
 		if(terminal_compairCommand(&pCmdBuf[i], command.command)){
-			memset(&pCmdBuf[i], 0x00, sizeof(terminal_command_t));
+			memset(&pCmdBuf[i], 0x00, sizeof(tool_terminal_command_t));
 			
 			/* remove successful */
 			return true;
